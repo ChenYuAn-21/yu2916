@@ -1,0 +1,169 @@
+/* Basic layout and responsive rules */
+:root{
+  --gap:12px;
+  --card-bg:#fff;
+  --card-border:#ddd;
+}
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background:#f7f7f7;
+  color:#222;
+}
+
+nav{
+  padding:8px 0;
+}
+nav a{ margin-right: 15px; }
+
+.container{
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 12px;
+}
+
+/* Items grid: responsive using flexbox */
+.items{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--gap);
+}
+.item{
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  padding:10px;
+  box-sizing:border-box;
+  flex: 1 1 200px; /* grow, shrink, base width */
+  min-width:160px;
+  max-width:320px;
+}
+.item img{ max-width:100%; height:auto; display:block; }
+
+/* Ensure product images share the same visual height while preserving aspect ratio */
+.item .image-wrap{
+  height:250px; /* fixed visual height */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  margin-bottom:6px;
+}
+.item .image-wrap img{
+  max-height:100%;
+  max-width:100%;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  display:block;
+}
+
+/* Forms and inputs */
+input[type="text"], input[type="number"], select, textarea{
+  padding:6px 8px;
+  border:1px solid #ccc;
+  border-radius:4px;
+  font-size:14px;
+}
+button{ padding:8px 12px; border-radius:6px; cursor:pointer; }
+
+/* Button styles for nav */
+.btn{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:6px;
+  text-decoration:none;
+  color:#fff;
+  font-weight:600;
+}
+.btn-primary{
+  background:#1976d2;
+}
+.btn-primary:hover{ background:#125ea3; }
+.btn-alt{
+  background:#6c757d;
+}
+.btn-alt:hover{ background:#565e63; }
+
+/* Distinct action buttons */
+.btn-user{
+  background: #ffe0b2; /* lighter orange */
+  color: #111; /* darker text for contrast on light bg */
+  border: 1px solid #ffc080; /* border similar to background */
+}
+.btn-user:hover{ background:#ffd699 }
+
+.btn-search{
+  background: #b7f2c7; /* lighter green */
+  color: #111;
+  border: 1px solid #9be8a8; /* border similar to background */
+}
+.btn-search:hover{ background:#9fe0b1 }
+
+/* add slight separation for nav links when form exists */
+nav form{ display:inline-block; margin-left:12px; vertical-align:middle; }
+
+/* QA messages area responsive */
+#messages{ width:100%; box-sizing:border-box; }
+
+/* Small screens adjustments */
+@media (max-width:600px){
+  body{ padding:10px; }
+  .item{ flex: 1 1 100%; max-width:100%; }
+  nav a{ display:inline-block; margin-bottom:6px; }
+}
+
+/* Accessibility focus */
+a:focus, img:focus, button:focus{ outline:none; }
+:focus-visible{ outline: 3px solid rgba(13,110,253,0.6); outline-offset:2px; }
+
+/* Role badge styles for QA */
+.role-badge{
+  display:inline-block;
+  padding:2px 6px;
+  border-radius:4px;
+  margin-left:8px;
+  font-size:0.8em;
+  font-weight:600;
+}
+.role-badge.seller{
+  background:#1976d2; /* seller: blue */
+  color:#fff;
+  border:1px solid #1565c0;
+}
+.role-badge.buyer{
+  background:#28a745; /* buyer: green */
+  color:#fff;
+  border:1px solid #218838;
+}
+
+/* Item notes highlight */
+.item-notes{
+  margin-top:12px;
+  background: #fff8e1; /* warmer pale yellow */
+  border: 1px solid #f7d68a;
+  border-left: 8px solid #ffb300; /* stronger yellow accent */
+  padding:14px 16px;
+  border-radius:8px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+}
+.item-notes-header{
+  font-weight:800;
+  color:#7a4f01;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.item-notes-body{
+  color:#333;
+  line-height:1.45;
+  font-size:0.98rem;
+}
+
+/* Slight responsive tweak for notes */
+@media (max-width:600px){
+  .item-notes{ padding:10px; }
+  .item-notes-header{ font-size:0.95rem; }
+}

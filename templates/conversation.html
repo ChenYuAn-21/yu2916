@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>與 {{ other.name if other else '使用者' }} 的對話</h2>
+<div id="convBox" style="border:1px solid #ccc;padding:10px;height:400px;overflow-y:scroll;">
+    {% for m in messages %}
+    <div class="msg-row" id="msg-{{ m.id }}" data-msg-id="{{ m.id }}" style="margin-bottom:8px;">
+        <b>{{ (m.user_id == session.get('user_id')) and '我' or (other.name if other else '對方') }}</b>
+        <div class="msg-body" style="white-space:pre-wrap">{{ m.msg }}</div>
+        {% if m.image_path %}
+            <div><img src="{{ url_for('uploaded_file', filename=m.image_path) }}" style="max-width:200px; display:block; margin-top:6px"></div>
+        {% endif %}
+        <small style="color:#666">{{ m.timestamp | gmt8 }}{% if m.is_read %} · 已讀{% endif %}</small>
+    </div>
+    {% endfor %}
+</div>
+<form id="convForm" style="margin-top:8px;" onsubmit="return sendMessage();">
+    <textarea id="msgInput" name="msg" rows="3" style="width:100%"></textarea>
+    <div style="margin-top:6px;">
+        <input type="file" id="imgInput" accept="image/*">
+        <button id="sendBtn" type="submit" style="padding:8px 12px;background:#2196F3;color:#fff;border-radius:6px;border:none;">送出訊息</button>
+    </div>
+</form>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+const convId = {{ conv.id }};
+const convRoom = 'conv_' + convId;
+const myUserId = {{ session.get('user_id')|tojson }};
+socket.emit('join_conv', {conv_id: convId});
+
+socket.on('conv_message', function(data){
+    if(data.conv_id != convId) return;
+    console.log('conv_message received', data);
+    appendMessage(data);
+});
+
+socket.on('read_receipt', function(data){
+    if(data.conv_id != convId) return;
+    (data.message_ids || []).forEach(function(id){
+        const el = document.getElementById('msg-' + id);
+        if(el){
+            const small = el.querySelector('small');
+            if(small) small.textContent = small.textContent + ' · 已讀';
+        }
+    });
+});
+
+socket.on('conv_error', function(data){
+    console.error('conv_error', data);
+    alert('傳送失敗: ' + (data && data.error ? data.error : '未知錯誤'));
+});
+
+function appendMessage(d){
+    const box = document.getElementById('convBox');
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+    row.id = 'msg-' + d.id;
+    row.style.marginBottom = '8px';
+    const who = document.createElement('b');
+    who.textContent = (d.user_id == myUserId) ? '我' : (""+ (d.display_name || '對方'));
+    row.appendChild(who);
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.style.whiteSpace = 'pre-wrap';
+    body.textContent = d.msg || '';
+    row.appendChild(body);
+    if(d.image_url){
+        const img = document.createElement('img');
+        // ensure absolute URL when necessary
+        let src = d.image_url || '';
+        try{
+            if(src && !src.startsWith('http') && src.startsWith('/')){
+                src = window.location.origin + src;
+            }
+        }catch(e){ }
+        img.src = src;
+        img.style.maxWidth = '200px';
+        img.style.display = 'block';
+        img.style.marginTop = '6px';
+        row.appendChild(img);
+    }
+    const small = document.createElement('small');
+    small.style.color = '#666';
+    small.textContent = new Date(d.timestamp).toLocaleString();
+    row.appendChild(small);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+}
+
+async function sendMessage(){
+    const txtEl = document.getElementById('msgInput');
+    const txt = txtEl.value.trim();
+    const fileInput = document.getElementById('imgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const hasFile = fileInput.files && fileInput.files.length > 0;
+    if(!txt && !hasFile){
+        alert('請輸入文字或選擇要上傳的圖片。');
+        return false;
+    }
+    let image_url = null;
+    let image_filename = null;
+    if(hasFile){
+        // disable send button to avoid duplicate uploads
+        if(sendBtn) sendBtn.disabled = true;
+        const fd = new FormData();
+        fd.append('image', fileInput.files[0]);
+        const res = await fetch("{{ url_for('upload_message_image') }}", {method:'POST', body:fd});
+        let j = null;
+        try{ j = await res.json(); }catch(e){ alert('上傳回傳格式錯誤'); if(sendBtn) sendBtn.disabled = false; return false; }
+        console.log('upload response', res.status, j);
+        if(!res.ok || j.error){
+            alert('圖片上傳失敗: ' + (j && j.error ? j.error : res.statusText));
+            if(sendBtn) sendBtn.disabled = false;
+            return false;
+        }
+        if(j.url) image_url = j.url;
+        // 傳回 server 的檔名以便 server 儲存 filename 而非完整 URL
+        image_filename = j.filename || null;
+    }
+    console.log('emit conv_send', {conv_id: convId, msg: txt, image_url: image_url, image_filename: image_filename});
+    // 使用 acknowledgement 回傳，等待伺服器回應後再清除 UI
+    socket.emit('conv_send', {conv_id: convId, msg: txt, image_url: image_url, image_filename: image_filename}, function(resp){
+        console.log('conv_send ack', resp);
+        if(!resp || resp.status !== 'ok'){
+            alert('傳送失敗: ' + (resp && resp.error ? resp.error : '伺服器未回應'));
+            if(sendBtn) sendBtn.disabled = false;
+            return;
+        }
+        // 成功：清除輸入（訊息會由 conv_message 廣播到所有房間成員包含自己）
+        txtEl.value = '';
+        fileInput.value = '';
+        if(sendBtn) sendBtn.disabled = false;
+    });
+    return false;
+}
+</script>
+{% endblock %}

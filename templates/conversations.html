@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>私訊會話</h2>
+{% if conversations|length == 0 %}
+<p>目前沒有私訊會話。</p>
+{% else %}
+<ul>
+    {% for row in conversations %}
+    <li>
+        <a href="{{ url_for('conversation_view', conv_id=row.conv.id) }}">與 {{ row.other.name if row.other else '使用者' }} 的交談</a>
+        {% if row.unread_count and row.unread_count > 0 %}
+            <span style="color:#d00; margin-left:8px;">（未讀 {{ row.unread_count }} ）</span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

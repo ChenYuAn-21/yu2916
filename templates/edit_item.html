@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>編輯物品</h2>
+<form method="POST" enctype="multipart/form-data">
+<label>名稱：</label>
+<input type="text" name="name" value="{{ item.name }}" required><br>
+
+<label>分類：</label>
+<select name="category" required>
+<option value="書籍" {% if item.category=='書籍' %}selected{% endif %}>書籍</option>
+<option value="衣物" {% if item.category=='衣物' %}selected{% endif %}>衣物</option>
+<option value="3C產品" {% if item.category=='3C產品' %}selected{% endif %}>3C產品</option>
+<option value="電器" {% if item.category=='電器' %}selected{% endif %}>電器</option>
+<option value="家具" {% if item.category=='家具' %}selected{% endif %}>家具</option>
+<option value="其他" {% if item.category=='其他' %}selected{% endif %}>其他</option>
+</select><br>
+
+<label>狀況：</label>
+<select name="condition" required>
+<option value="全新" {% if item.condition=='全新' %}selected{% endif %}>全新</option>
+<option value="良好" {% if item.condition=='良好' %}selected{% endif %}>良好</option>
+<option value="普通" {% if item.condition=='普通' %}selected{% endif %}>普通</option>
+<option value="稍舊" {% if item.condition=='稍舊' %}selected{% endif %}>稍舊</option>
+</select><br>
+
+<label>價格：</label>
+<input type="number" name="price" value="{{ item.price|int if item.price is not none else '' }}" step="1" min="0"><br>
+
+<label>數量：</label>
+<input type="number" name="quantity" value="{{ item.quantity or 1 }}" min="1" step="1"><br>
+
+<label>校區：</label>
+<select name="campus">
+<option value="本校區" {% if item.campus=='本校區' %}selected{% endif %}>本校區</option>
+<option value="華夏校區" {% if item.campus=='華夏校區' %}selected{% endif %}>華夏校區</option>
+</select><br>
+
+<label>目前圖片：</label><br>
+{% if item.image_path %}
+<img src="{{ url_for('uploaded_file', filename=item.image_path) }}" width="200"><br>
+{% else %}
+<span>無圖片</span><br>
+{% endif %}
+
+<label>上傳新圖片（若要替換）：</label>
+<input type="file" name="image"><br><br>
+
+<label>備註說明：</label><br>
+<textarea name="notes" rows="4" cols="60">{{ item.notes or '' }}</textarea><br><br>
+
+<fieldset>
+	<legend>取貨 / 寄送（可複選）</legend>
+	<label><input type="checkbox" name="pickup_methods" value="面交" {% if '面交' in pickup_methods %}checked{% endif %}> 面交</label>
+	<label><input type="checkbox" name="pickup_methods" value="寄送" id="shipCheckboxEdit" {% if '寄送' in pickup_methods %}checked{% endif %}> 寄送</label>
+	<div id="shippingOptionsEdit" style="display:none; margin-top:8px;">
+		<label><input type="radio" name="shipping_type" value="免運" {% if item.shipping_type == '免運' or not item.shipping_type %}checked{% endif %}> 免運</label>
+		<label><input type="radio" name="shipping_type" value="含運" {% if item.shipping_type == '含運' %}checked{% endif %}> 含運</label>
+		<label><input type="radio" name="shipping_type" value="運費外加" {% if item.shipping_type == '運費外加' %}checked{% endif %}> 運費外加</label>
+		<div id="shippingFeeRowEdit" style="display:none; margin-top:6px;">
+			運費金額：<input type="number" name="shipping_fee" step="0.01" min="0" value="{{ item.shipping_fee or '' }}"> 元
+		</div>
+	</div>
+</fieldset>
+
+<fieldset style="margin-top:8px;">
+	<legend>付款方式（可複選）</legend>
+	<label><input type="checkbox" name="payment_methods" value="面交收現" {% if '面交收現' in payment_methods %}checked{% endif %}> 面交收現</label>
+	<label><input type="checkbox" name="payment_methods" value="貨到收現" {% if '貨到收現' in payment_methods %}checked{% endif %}> 貨到收現</label>
+</fieldset>
+
+<script>
+	// edit page JS: show shipping options when '寄送' checked
+	(function(){
+		var shipCheckbox = document.getElementById('shipCheckboxEdit');
+		var shippingOptions = document.getElementById('shippingOptionsEdit');
+		var feeRow = document.getElementById('shippingFeeRowEdit');
+		function updateShippingVisibility(){
+			shippingOptions.style.display = shipCheckbox.checked ? 'block' : 'none';
+			// if shipping_type currently is 運費外加, show fee
+			var radios = document.getElementsByName('shipping_type');
+			var sel = '';
+			for(var i=0;i<radios.length;i++){ if(radios[i].checked) sel = radios[i].value; }
+			feeRow.style.display = (sel === '運費外加') ? 'block' : 'none';
+		}
+		shipCheckbox && shipCheckbox.addEventListener('change', updateShippingVisibility);
+		var radios = document.getElementsByName('shipping_type');
+		for(var i=0;i<radios.length;i++){ radios[i].addEventListener('change', updateShippingVisibility); }
+		// initial
+		updateShippingVisibility();
+	})();
+</script>
+
+<button type="submit">儲存變更</button>
+</form>
+<!-- 切換上架 / 下架 按鈕：依 item.is_active 顯示不同文字與樣式 -->
+{% if item.is_active %}
+<form method="POST" action="{{ url_for('toggle_item_active', item_id=item.id) }}" onsubmit="return confirm('確定要下架此商品？下架後商品將不再上架給其他人看到。');" style="margin-top:12px;">
+	<button type="submit" style="background:#d9534f;color:white;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">下架商品</button>
+</form>
+{% else %}
+<form method="POST" action="{{ url_for('toggle_item_active', item_id=item.id) }}" onsubmit="return confirm('確定要重新上架此商品？重新上架後商品會再次出現在列表。');" style="margin-top:12px;">
+	<button type="submit" style="background:#5cb85c;color:white;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">重新上架</button>
+</form>
+{% endif %}
+{% endblock %}

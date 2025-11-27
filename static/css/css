@@ -1,0 +1,17 @@
+body { font-family: Arial; margin: 20px; }
+nav a { margin-right: 15px; }
+.item { border: 1px solid #ccc; padding: 10px; margin: 10px; display: inline-block; width: 200px; }
+
+/* Remove yellow/dashed focus outline from mouse clicks but keep visible focus for keyboard users */
+a:focus, img:focus, button:focus {
+	outline: none;
+}
+
+/* Use a sensible, accessible focus style for keyboard navigation */
+:focus-visible {
+	outline: 3px solid rgba(13,110,253,0.6);
+	outline-offset: 2px;
+}
+
+/* Ensure images don't get unexpected borders */
+img { border: 0; }

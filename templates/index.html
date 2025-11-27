@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="margin:12px 0;">
+	<form method="get" action="{{ url_for('index') }}">
+		<input type="text" name="q" placeholder="關鍵字" value="{{ q }}">
+		<select name="category">
+			<option value="" {% if not category %}selected{% endif %}>所有分類</option>
+			<option value="書籍" {% if category == '書籍' %}selected{% endif %}>書籍</option>
+			<option value="衣物" {% if category == '衣物' %}selected{% endif %}>衣物</option>
+            <option value="3C產品" {% if category == '3C產品' %}selected{% endif %}>3C產品</option>
+			<option value="電器" {% if category == '電器' %}selected{% endif %}>電器</option>
+            <option value="家具" {% if category == '家具' %}selected{% endif %}>家具</option>
+			<option value="其他" {% if category == '其他' %}selected{% endif %}>其他</option>
+		</select>
+		<select name="campus">
+			<option value="" {% if not campus %}selected{% endif %}>全部校區</option>
+			<option value="本校區" {% if campus == '本校區' %}selected{% endif %}>本校區</option>
+			<option value="華夏校區" {% if campus == '華夏校區' %}selected{% endif %}>華夏校區</option>
+		</select>
+		<input type="text" name="min_price" placeholder="最低價" value="{{ min_price }}" style="width:80px">
+		<input type="text" name="max_price" placeholder="最高價" value="{{ max_price }}" style="width:80px">
+		<select name="condition">
+			<option value="" {% if not condition %}selected{% endif %}>全部</option>
+			<option value="全新" {% if condition == '全新' %}selected{% endif %}>全新</option>
+			<option value="二手" {% if condition == '二手' %}selected{% endif %}>二手</option>
+		</select>
+		<button type="submit">搜尋</button>
+	</form>
+</div>
+
+<div class="items" style="display:flex; flex-wrap:wrap; gap:16px;">
+	{% for item in items %}
+	<div class="item" style="width:220px; border:1px solid #ddd; padding:8px; border-radius:6px;">
+			{% if item.image_path %}
+				<a href="{{ url_for('uploaded_file', filename=item.image_path) }}" target="_blank">
+					<div class="image-wrap">
+						<img src="{{ url_for('uploaded_file', filename=item.image_path) }}" alt="{{ item.name }}">
+					</div>
+				</a>
+			{% else %}
+				<div class="image-wrap" style="color:#888; font-size:0.95rem;">未有圖片</div>
+			{% endif %}
+		<div style="font-weight:bold">{{ item.name }}</div>
+		<div>分類：{{ item.category or '未分類' }}</div>
+		<div>校區：{{ item.campus or '未指定' }}</div>
+		<div>價格：{% if item.price %}{{ item.price|int }} 元{% else %}洽詢{% endif %}</div>
+		<div style="margin-top:6px">
+			<a href="{{ url_for('item_detail', item_id=item.id) }}">查看詳情</a>
+		</div>
+	</div>
+	{% else %}
+	<div>目前沒有符合的商品。</div>
+	{% endfor %}
+</div>
+
+
+
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+    <h2 style="margin:0">{{ item.name }}</h2>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px">
+        <a href="{{ url_for('index') }}" style="padding:6px 10px;background:#2196F3;color:#fff;border-radius:6px;text-decoration:none;margin-right:8px">🏠 回首頁</a>
+        <a href="{{ url_for('qa', item_id=item.id) }}" style="padding:6px 10px;background:#777;color:#fff;border-radius:6px;text-decoration:none">💬 問答區</a>
+        {% if session.get('user_id') and seller and session.get('user_id')|int == seller.id|int %}
+            <!-- 賣家：顯示編輯按鈕（放在標題右側） -->
+            <a href="{{ url_for('edit_item', item_id=item.id) }}" style="padding:6px 10px;background:#4CAF50;color:white;border-radius:6px;text-decoration:none;margin-left:6px">✏️ 編輯物品</a>
+        {% elif seller and session.get('user_id') and session.get('user_id')|int != seller.id|int %}
+            <!-- 買家：顯示聯絡賣家按鈕（放在相同位置） -->
+            <a href="{{ url_for('conversations_start', seller_id=seller.id, item_id=item.id) }}" style="padding:6px 10px;background:#607D8B;color:#fff;border-radius:6px;text-decoration:none;margin-left:6px">✉️ 聯絡賣家</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if item.image_path %}
+    <img src="{{ url_for('uploaded_file', filename=item.image_path) }}" width="300"><br>
+{% else %}
+    <div style="width:300px; height:220px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#888;">未有圖片</div>
+{% endif %}
+<p>分類：{{ item.category }}</p>
+<p>狀況：{{ item.condition }}</p>
+<p>價格：{% if item.price %}{{ item.price|int }} 元{% else %}洽詢{% endif %}</p>
+<p>校區：{{ item.campus }}</p>
+<p>庫存數量：{{ item.quantity or 0 }} {% if item.is_active is not none and not item.is_active %}<strong style="color:#d32f2f;">（已下架）</strong>{% endif %}</p>
+<p>已加入購物車人數：<strong>{{ carts_count or 0 }}</strong>（加入購物車不保留庫存，僅供先搶先贏參考）</p>
+{% if seller %}
+<p>賣家：{{ seller.name }} (ID: {{ seller.id }})</p>
+{% else %}
+<p>賣家：未指定</p>
+{% endif %}
+
+{% if item.notes %}
+<div class="item-notes">
+    <div class="item-notes-header">📌 備註說明</div>
+    <div class="item-notes-body" style="white-space:pre-wrap">{{ item.notes }}</div>
+</div>
+{% endif %}
+
+<div class="item-delivery">
+    <h3>取貨 / 寄送與付款方式</h3>
+    <ul>
+        {% if pickup_methods and pickup_methods|length > 0 %}
+            {% for p in pickup_methods %}
+                <li>取貨方式：{{ p }}</li>
+            {% endfor %}
+        {% else %}
+            <li>取貨方式：未指定</li>
+        {% endif %}
+
+        {% if item.shipping_type %}
+            <li>寄送方式：{{ item.shipping_type }}{% if item.shipping_type == '運費外加' and item.shipping_fee %}（運費 {{ item.shipping_fee|int }} 元）{% endif %}</li>
+        {% endif %}
+
+        {% if payment_methods and payment_methods|length > 0 %}
+            <li>付款方式：{{ payment_methods|join(', ') }}</li>
+        {% else %}
+            <li>付款方式：面交收現</li>
+        {% endif %}
+    </ul>
+</div>
+
+{# edit button moved to header for consistent placement (# see header area) #}
+{% if not (session.get('user_id') and seller and session.get('user_id')|int == seller.id|int) %}
+    <hr>
+    {% if session.get('user_id') %}
+    {% set need_shipping = (item.shipping_type) or ('寄送' in pickup_methods) %}
+    <div class="purchase-actions">
+        {% if form_error %}
+        <div style="padding:8px;background:#ffe6e6;border:1px solid #f5c2c2;color:#a94442;margin-bottom:8px;">{{ form_error }}</div>
+        {% endif %}
+        <!-- 已登入會員：顯示加入購物車按鈕 -->
+        <form method="post" action="{{ url_for('add_to_cart', item_id=item.id) }}" style="display:inline-block; margin-right:12px;">
+            <input type="hidden" name="qty" value="1">
+            <div style="margin-top:8px">
+                <button type="submit" style="padding:8px 12px;background:#2196F3;color:#fff;border-radius:6px;border:none;" {% if item.quantity is not none and item.quantity <= 0 %}disabled{% endif %}>➕ 加入購物車</button>
+            </div>
+        </form>
+
+        <!-- 已登入會員：立即購買表單 -->
+        <form method="post" action="{{ url_for('buy_now', item_id=item.id) }}" style="display:inline-block;">
+            <input type="hidden" name="qty" value="1">
+            <div style="margin-top:8px">
+                <label>姓氏（必填）： <input type="text" name="contact_lastname" required></label>
+            </div>
+            <div style="margin-top:6px">
+                <label>身分：
+                    <select name="contact_role">
+                        <option value="">請選擇</option>
+                        <option value="同學">同學</option>
+                        <option value="教職員">教職員</option>
+                    </select>
+                </label>
+            </div>
+            <div style="margin-top:6px">
+                <label>聯絡手機（必填）： <input type="tel" name="contact_phone" required></label>
+            </div>
+            <div style="margin-top:6px">
+                <label>取貨方式：
+                    <label><input type="radio" name="delivery_method" value="pickup" checked> 面交</label>
+                    <label><input type="radio" name="delivery_method" value="shipping"> 寄送</label>
+                </label>
+            </div>
+            {% if need_shipping %}
+            <div id="buyShippingAddress" style="margin-top:6px; display:none;">
+                <label>寄送地址（選擇寄送時必填）：<br><input type="text" name="shipping_address" style="width:300px"></label>
+            </div>
+            {% endif %}
+            <div style="margin-top:8px">
+                <button type="submit" style="padding:8px 12px;background:#FF5722;color:#fff;border-radius:6px;border:none;" {% if item.quantity is not none and item.quantity <= 0 %}disabled{% endif %}>💳 立即購買</button>
+            </div>
+        </form>
+        <script>
+            (function(){
+                var radios = document.getElementsByName('delivery_method');
+                function update(){
+                    var val = null;
+                    for(var i=0;i<radios.length;i++){ if(radios[i].checked) val = radios[i].value; }
+                    var box = document.getElementById('buyShippingAddress');
+                    if(box) box.style.display = (val === 'shipping') ? 'block' : 'none';
+                }
+                for(var i=0;i<radios.length;i++){ radios[i].addEventListener('change', update); }
+                update();
+            })();
+        </script>
+    </div>
+    {% else %}
+    <div style="padding:10px;background:#f4f4f4;border-radius:6px;">
+        <strong>購買/加入購物車為會員限定功能</strong><br>
+        請先 <a href="{{ url_for('login') }}">登入</a> 或 <a href="{{ url_for('register') }}">註冊</a> 後再購買或加入購物車。
+    </div>
+    {% endif %}
+{% endif %}
+
+{% endblock %}

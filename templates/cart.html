@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>購物車</h2>
+{% if items|length == 0 %}
+<p>購物車是空的。</p>
+{% else %}
+<table>
+    <tr><th>商品</th><th>數量</th><th>單價</th><th>小計</th><th></th></tr>
+    {% for row in items %}
+    <tr>
+        <td><a href="{{ url_for('item_detail', item_id=row.item.id) }}">{{ row.item.name }}</a></td>
+        <td>{{ row.qty }}</td>
+        <td>{{ row.item.price }}</td>
+        <td>{{ (row.item.price or 0) * row.qty }}</td>
+        <td>
+            <form action="{{ url_for('remove_from_cart', item_id=row.item.id) }}" method="post">
+                <button type="submit">移除</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<p>總計：{{ total }}</p>
+{% if checkout_error %}
+<div style="padding:8px;background:#ffe6e6;border:1px solid #f5c2c2;color:#a94442;margin-bottom:8px;">{{ checkout_error }}</div>
+{% endif %}
+
+<form action="{{ url_for('checkout') }}" method="post">
+    <div style="margin-bottom:8px">
+        <label>姓氏（必填）： <input type="text" name="contact_lastname" required></label>
+    </div>
+    <div style="margin-bottom:8px">
+        <label>身分：
+            <select name="contact_role">
+                <option value="">請選擇</option>
+                <option value="同學">同學</option>
+                <option value="教職員">教職員</option>
+            </select>
+        </label>
+    </div>
+    <div style="margin-bottom:8px">
+        <label>聯絡手機（必填）： <input type="tel" name="contact_phone" required></label>
+    </div>
+    <div style="margin-bottom:8px">
+        <label>取貨方式：
+            <label><input type="radio" name="delivery_method" value="pickup" checked> 面交</label>
+            <label><input type="radio" name="delivery_method" value="shipping"> 寄送</label>
+        </label>
+    </div>
+    <div id="cartShippingAddress" style="margin-bottom:8px; display:none">
+        <label>寄送地址：<br><input type="text" name="shipping_address" style="width:400px"></label>
+    </div>
+    <button type="submit">結帳</button>
+</form>
+
+<script>
+    (function(){
+        var radios = document.getElementsByName('delivery_method');
+        function update(){
+            var val = null;
+            for(var i=0;i<radios.length;i++){ if(radios[i].checked) val = radios[i].value; }
+            var box = document.getElementById('cartShippingAddress');
+            if(box) box.style.display = (val === 'shipping') ? 'block' : 'none';
+        }
+        for(var i=0;i<radios.length;i++){ radios[i].addEventListener('change', update); }
+        update();
+    })();
+</script>
+{% endif %}
+{% endblock %}

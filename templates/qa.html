@@ -1,0 +1,91 @@
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+    <h2 style="margin:0">{{ item.name }} — 問答區</h2>
+    <div style="margin-left:auto">
+        <a href="{{ url_for('index') }}" style="padding:6px 10px;background:#2196F3;color:#fff;border-radius:6px;text-decoration:none;margin-right:8px">🏠 回首頁</a>
+        <a href="{{ url_for('item_detail', item_id=item.id) }}" style="padding:6px 10px;background:#777;color:#fff;border-radius:6px;text-decoration:none">🔙 查看商品</a>
+    </div>
+</div>
+<div id="qa-root" data-item-id="{{ item.id }}"></div>
+
+<div id="messages" style="border:1px solid #ccc;height:300px;overflow-y:scroll;padding:10px;">
+{% for m in messages %}
+<div>
+    <b>
+        {{ m.display_name }}{% if m.user_id %} (ID: {{ m.user_id }}){% endif %}
+        {# 如果沒有 user_id（匿名），不顯示角色標籤；若有 user_id，對已註冊的使用者顯示對應角色標籤(賣家或消費者)，但若 display_name 已包含角色詞也略過 #}
+        {% if m.user_id %}
+            {% set role_label = '賣家' if m.sender == 'seller' else '消費者' %}
+            {% if role_label not in (m.display_name or '') %}
+                <span class="role-badge {% if m.sender == 'seller' %}seller{% else %}buyer{% endif %}">{{ role_label }}</span>
+            {% endif %}
+        {% endif %}
+        :
+    </b>
+    {{ m.msg }}
+    <small style="color:#666">{% if m.timestamp %}{{ m.timestamp | gmt8 }}{% endif %}</small>
+</div>
+{% endfor %}
+</div>
+
+<input id="messageInput" placeholder="輸入訊息">
+<div style="margin-bottom:8px;">
+    {% if session.get('user_id') %}
+        <b>目前使用者：</b> {{ session.get('user_name') }} (ID: {{ session.get('user_id') }})
+        {% if session.get('user_id')|int == item.seller_id|default(0)|int %}
+            <span style="color:green; margin-left:8px;">（此使用者為賣家）</span>
+        {% endif %}
+    {% else %}
+        <b>目前使用者：</b> 匿名（系統將自動以「匿名消費者」身分留言）
+    {% endif %}
+</div>
+<button onclick="sendMessage()">送出</button>
+
+{% raw %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+const root = document.getElementById('qa-root');
+const itemId = root ? root.dataset.itemId : null;
+const room = 'item_' + itemId;
+
+socket.emit('join', { room: room });
+
+socket.on('message', function(data) {
+    const box = document.getElementById('messages');
+    const row = document.createElement('div');
+    const bold = document.createElement('b');
+    const display = data.display_name ? data.display_name : (data.sender ? (data.sender === 'seller' ? '賣家' : '匿名消費者') : '使用者');
+    // 名稱與 ID
+    bold.appendChild(document.createTextNode(display + (data.user_id ? (' (ID: ' + data.user_id + ')') : '')));
+    // 只有當 message 有 user_id 時（代表此訊息來自已註冊的使用者）才顯示角色標籤；匿名訊息不顯示標籤
+    if (data.user_id) {
+        const roleLabel = data.sender === 'seller' ? '賣家' : '消費者';
+        if (!display.includes(roleLabel)) {
+            const roleSpan = document.createElement('span');
+            roleSpan.textContent = roleLabel;
+            roleSpan.className = 'role-badge ' + (data.sender === 'seller' ? 'seller' : 'buyer');
+            bold.appendChild(roleSpan);
+        }
+    }
+    bold.appendChild(document.createTextNode(':'));
+    row.appendChild(bold);
+    row.appendChild(document.createTextNode(' ' + data.msg));
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+});
+
+function sendMessage() {
+    var msg = document.getElementById('messageInput').value;
+    if (msg.trim() === '') return;
+    socket.emit('send_message', { room: room, msg: msg, item_id: itemId });
+    document.getElementById('messageInput').value = '';
+}
+// 支援按 Enter 送出（Shift+Enter 可換行）
+document.getElementById('messageInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+    }
+});
+</script>
+{% endraw %}

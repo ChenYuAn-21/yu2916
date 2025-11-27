@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>聊天室</h2>
+<div id="messages" style="border:1px solid #ccc;height:300px;overflow-y:scroll;padding:10px;"></div>
+
+<input id="messageInput" placeholder="輸入訊息">
+<button onclick="sendMessage()">送出</button>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+const room = '{{ room }}';
+const username = 'user_' + Math.floor(Math.random() * 1000);
+
+socket.emit('join', {room, username});
+
+socket.on('message', data => {
+    const box = document.getElementById('messages');
+    // 優先使用伺服器給的 display_name，否則回退到 data.username 或匿名
+    const display = data.display_name ? data.display_name : (data.username ? data.username : '匿名消費者');
+    box.innerHTML += `<div><b>${display}:</b> ${data.msg}</div>`;
+    box.scrollTop = box.scrollHeight; // 滾到最底部
+});
+
+function sendMessage() {
+    const msg = document.getElementById('messageInput').value;
+    if(msg.trim() === '') return;
+    socket.emit('send_message', {room, username, msg});
+    document.getElementById('messageInput').value = '';
+}
+
+// 支援按 Enter 送出（Shift+Enter 可換行）
+document.getElementById('messageInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+    }
+});
+</script>
+{% endblock %}

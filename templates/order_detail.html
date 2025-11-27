@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>訂單詳情 - #{{ order.id }}</h2>
+<div>
+    <strong>買家：</strong> {{ buyer_name or '匿名' }} {% if buyer_id %}(ID: {{ buyer_id }}){% endif %}<br>
+    <strong>買家姓氏：</strong> {{ buyer_surname or '匿名' }}<br>
+    <strong>聯絡電話：</strong> {{ order.contact_phone or '無' }}<br>
+    <strong>取貨方式：</strong> {{ order.delivery_method or '未指定' }}<br>
+    {% if order.shipping_address %}
+    <strong>寄送地址：</strong> <div style="white-space:pre-wrap;">{{ order.shipping_address }}</div>
+    {% endif %}
+    <strong>下單時間：</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '' }}
+</div>
+<div style="margin-top:10px;">
+    {% if buyer_id %}
+        {% if items and items|length > 0 %}
+            <a class="btn btn-alt" href="{{ url_for('conversations_start', seller_id=buyer_id, item_id=items[0][1].id) }}">💬 聯絡買家（私訊）</a>
+        {% else %}
+            <a class="btn btn-alt" href="{{ url_for('conversations_start', seller_id=buyer_id) }}">💬 聯絡買家（私訊）</a>
+        {% endif %}
+    {% else %}
+        <button id="showContactBtn" class="btn btn-alt">📞 顯示聯絡資訊</button>
+    {% endif %}
+
+    <div id="contactInfo" style="display:none; margin-top:8px; background:#f9f9f9; padding:8px; border-radius:6px;">
+        <div><strong>聯絡電話：</strong> {{ order.contact_phone or '無' }}</div>
+        {% if order.shipping_address %}
+        <div style="margin-top:6px;"><strong>寄送地址：</strong><div style="white-space:pre-wrap;">{{ order.shipping_address }}</div></div>
+        {% endif %}
+        <div style="margin-top:6px; color:#666;">此買家為匿名使用者，無法透過站內私訊，請使用上方電話或地址聯絡。</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('showContactBtn');
+    if(btn){
+        btn.addEventListener('click', function(){
+            var info = document.getElementById('contactInfo');
+            if(!info) return;
+            info.style.display = (info.style.display === 'none') ? 'block' : 'none';
+            btn.textContent = (info.style.display === 'block') ? '收起聯絡資訊' : '📞 顯示聯絡資訊';
+        });
+    }
+});
+</script>
+<h3 style="margin-top:12px;">訂單項目</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead><tr><th>商品ID</th><th>名稱</th><th>價格</th><th>數量</th></tr></thead>
+<tbody>
+{% for oi, item in items %}
+    <tr>
+        <td>{{ oi.item_id }}</td>
+        <td><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.name }}</a></td>
+        <td>{{ oi.price }}</td>
+        <td>{{ oi.quantity }}</td>
+    </tr>
+{% else %}
+    <tr><td colspan="4">無訂單項目</td></tr>
+{% endfor %}
+ </tbody>
+</table>
+{% endblock %}

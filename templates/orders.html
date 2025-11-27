@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>訂單紀錄</h2>
+{% if orders|length == 0 %}
+<p>目前沒有訂單。</p>
+{% else %}
+    {% for o in orders %}
+        <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
+            <strong>訂單 #{{ o.order.id }}</strong> - {{ o.order.created_at | gmt8 }} - 總計：{{ o.order.total }}
+            <div style="color:#444; font-size:0.95em; margin-top:4px;">
+                {% if o.order.contact_phone %}<span>聯絡手機：{{ o.order.contact_phone }}</span>{% endif %}
+                {% if o.order.delivery_method %}<span style="margin-left:8px">取貨方式：{{ o.order.delivery_method }}</span>{% endif %}
+                {% if o.order.pickup_location %}<span style="margin-left:8px">取貨地點：{{ o.order.pickup_location }}</span>{% endif %}
+                {% if o.order.shipping_address %}<div style="margin-top:4px">寄送地址：{{ o.order.shipping_address }}</div>{% endif %}
+            </div>
+            <ul>
+                {% for it in o.order_items %}
+                    <li>{{ it.item.name if it.item else '已刪除商品' }} x {{ it.order_item.quantity }} (每件 {{ it.order_item.price }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}

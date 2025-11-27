@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>校園循環站</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    
+<nav style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        
+        <a href="{{ url_for('index') }}"><h2 style="margin:0; font-size:1.5rem;">校園循環站 — 二手物交流平台</h2></a>
+        {% if session.get('user_id') %}
+            <a class="btn btn-alt" href="{{ url_for('upload') }}">📷 上傳二手物品</a>
+        {% else %}
+            <a class="btn btn-alt" href="{{ url_for('login') }}">📷 上傳二手物品（需登入）</a>
+        {% endif %}
+    </div>
+
+    <!-- 帳號系統連結（右側） -->
+    <div style="display:flex; align-items:center; gap:12px;">
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('seller_center') }}">🧑‍🏫 賣家中心</a>
+            <a href="{{ url_for('orders') }}">📦 購買清單</a>
+            <a href="{{ url_for('view_cart') }}">🛒 購物車 (<strong>{{ cart_distinct_count or 0 }}</strong>)</a>
+            <a id="convLink" href="{{ url_for('conversations_list') }}">💬 私訊 <span id="unreadConvBadge" style="display:inline-block; margin-left:4px;">{% if unread_conv_count and unread_conv_count > 0 %} (<strong>{{ unread_conv_count }}</strong>) {% else %}{% endif %}</span></a>
+            <span style="margin-left:8px">目前：{{ session.get('user_name') }} (ID: {{ session.get('user_id') }})</span>
+            <a href="{{ url_for('logout') }}" style="margin-left:8px">登出</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">登入</a>
+            <a href="{{ url_for('register') }}">註冊</a>
+        {% endif %}
+    </div>
+</nav>
+<hr>
+{% block content %}{% endblock %}
+{% if session.get('user_id') %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    // 更新未讀會話數 badge 的簡單 socket 聆聽器
+    try{
+        const _sock = io();
+        _sock.on('unread_conversations', function(d){
+            try{
+                const el = document.getElementById('unreadConvBadge');
+                if(!el) return;
+                if(d && d.count && d.count > 0){
+                    el.innerHTML = '<strong>' + d.count + '</strong>';
+                } else {
+                    el.innerHTML = '';
+                }
+            }catch(e){ console.error('update unread badge error', e); }
+        });
+    }catch(e){ console.error('socket load error', e); }
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>訂購成功</h2>
+<p>訂單編號：{{ order.id }}</p>
+<p>總金額：{{ order.total }}</p>
+<div style="color:#444; margin-bottom:8px;">
+    {% if order.contact_phone %}<div>聯絡手機：{{ order.contact_phone }}</div>{% endif %}
+    {% if order.delivery_method %}<div>取貨方式：{{ order.delivery_method }}</div>{% endif %}
+    {% if order.pickup_location %}<div>取貨地點：{{ order.pickup_location }}</div>{% endif %}
+    {% if order.shipping_address %}<div>寄送地址：{{ order.shipping_address }}</div>{% endif %}
+</div>
+<h3>訂單明細</h3>
+<ul>
+    {% for row in order_items %}
+    <li>{{ row.item.name }} × {{ row.qty }} - 單價：{{ row.item.price or 0 }}</li>
+    {% endfor %}
+</ul>
+<p><a href="{{ url_for('orders') }}">前往我的訂單</a></p>
+{% endblock %}

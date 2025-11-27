@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>賣家中心 - 我刊登的商品</h2>
+<p>此頁顯示你刊登過的商品、銷售狀態與上下架狀態。你可以編輯商品、切換上/下架，或手動標示為「完成交貨與收款」。</p>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
+<thead>
+<tr>
+<th>商品ID</th>
+<th>名稱</th>
+<th>價格</th>
+<th>已下單數量</th>
+<th>銷售狀態</th>
+<th>上/下架</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+{% for info in items_info %}
+<tr>
+    <td>{{ info.item.id }}</td>
+    <td><a href="{{ url_for('item_detail', item_id=info.item.id) }}">{{ info.item.name }}</a></td>
+    <td>{{ info.item.price }}</td>
+    <td>{{ info.sales_qty }}</td>
+    <td>{{ info.sales_status }}</td>
+    <td>{% if info.is_active %}<span style="color:green;">上架中</span>{% else %}<span style="color:gray;">已下架</span>{% endif %}</td>
+    <td>
+        <a href="{{ url_for('edit_item', item_id=info.item.id) }}">✏️ 編輯</a>
+        &nbsp;
+        <form method="POST" action="{{ url_for('toggle_item_active', item_id=info.item.id) }}" style="display:inline;">
+            <button type="submit" style="padding:4px 8px; margin-left:6px;">{% if info.is_active %}下架{% else %}上架{% endif %}</button>
+        </form>
+        &nbsp;
+        <form method="POST" action="{{ url_for('mark_item_completed', item_id=info.item.id) }}" onsubmit="return confirm('確定要將此商品標示為完成交貨與收款？此操作會將商品下架並把庫存設為 0。');" style="display:inline; margin-left:6px;">
+            <button type="submit" style="background:#337ab7;color:white;padding:4px 8px;border:none;border-radius:4px;">標示為完成</button>
+        </form>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="7" style="background:#fafafa;">
+        <strong>相關訂單：</strong>
+        {% if info.orders and info.orders|length > 0 %}
+            <ul style="margin:6px 0 6px 18px;">
+            {% for o in info.orders %}
+                <li>
+                    訂單 <a href="{{ url_for('order_detail', order_id=o.order_id) }}">#{{ o.order_id }}</a> |
+                    買家：{{ o.buyer_surname }} {% if o.buyer_id %}(ID: {{ o.buyer_id }}){% endif %} |
+                    手機：{{ o.contact_phone or '無' }} |
+                    取貨方式：{{ o.delivery_method or '未指定' }}
+                    {% if o.shipping_address %}| 寄送地址：{{ o.shipping_address }}{% endif %}
+                    | 數量：{{ o.quantity }} |
+                    時間：{{ o.order_time.strftime('%Y-%m-%d %H:%M') if o.order_time else '' }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <span style="color:#666;">目前尚無相關訂單。</span>
+        {% endif %}
+    </td>
+</tr>
+<tr><td colspan="7">目前沒有刊登的商品。</td></tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

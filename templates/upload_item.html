@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>上傳物品</h2>
+<form method="POST" enctype="multipart/form-data">
+<label>名稱：</label>
+<input type="text" name="name" required><br>
+
+
+<label>分類：</label>
+<select name="category" required>
+<option>書籍</option>
+<option>衣物</option>
+<option>3C產品</option>
+<option>電器</option>
+<option>家具</option>
+<option>其他</option>
+</select><br>
+
+
+<label>狀況：</label>
+<select name="condition" required>
+<option>全新</option>
+<option>良好</option>
+<option>普通</option>
+<option>稍舊</option>
+</select><br>
+
+
+<label>價格：</label>
+<input type="number" name="price" required step="1" min="0"><br>
+
+<label>數量：</label>
+<input type="number" name="quantity" value="1" min="1" step="1"><br>
+
+
+<label>校區：</label>
+<select name="campus">
+<option>本校區</option>
+<option>華夏校區</option>
+</select><br>
+
+
+<label>圖片：</label>
+<input type="file" name="image" required><br><br>
+
+<!-- 上傳需登入，上傳者將以登入帳號為賣家 -->
+
+<label>備註說明（可輸入商品額外資訊，例如尺寸、品牌、面交取貨地點）：</label><br>
+<textarea name="notes" rows="4" cols="60" placeholder="選填：例如尺寸、顏色、使用狀況、面交取貨地點等"></textarea><br><br>
+
+<fieldset>
+	<legend>取貨 / 寄送（可複選）</legend>
+	<label><input type="checkbox" name="pickup_methods" value="面交"> 面交</label>
+	<label><input type="checkbox" name="pickup_methods" value="寄送" id="shipCheckbox"> 寄送</label>
+	<div id="shippingOptions" style="display:none; margin-top:8px;">
+		<label><input type="radio" name="shipping_type" value="免運" checked> 免運</label>
+		<label><input type="radio" name="shipping_type" value="含運"> 含運</label>
+		<label><input type="radio" name="shipping_type" value="運費外加"> 運費外加</label>
+		<div id="shippingFeeRow" style="display:none; margin-top:6px;">
+			運費金額：<input type="number" name="shipping_fee" step="0.01" min="0" placeholder="例如：60"> 元
+		</div>
+	</div>
+</fieldset>
+
+<fieldset style="margin-top:8px;">
+	<legend>付款方式（可複選）</legend>
+	<label><input type="checkbox" name="payment_methods" value="面交收現"> 面交收現</label>
+	<label><input type="checkbox" name="payment_methods" value="貨到收現"> 貨到收現</label>
+</fieldset>
+
+<script>
+	// 顯示/隱藏寄送選項
+	document.getElementById('shipCheckbox').addEventListener('change', function(e){
+		var s = document.getElementById('shippingOptions');
+		s.style.display = e.target.checked ? 'block' : 'none';
+	});
+	// 顯示運費輸入
+	var radios = document.getElementsByName('shipping_type');
+	radios.forEach && radios.forEach(function(r){
+		r.addEventListener('change', function(){
+			document.getElementById('shippingFeeRow').style.display = (this.value === '運費外加') ? 'block' : 'none';
+		});
+	});
+</script>
+
+
+<button type="submit">送出</button>
+</form>
+{% endblock %}
